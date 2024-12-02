@@ -9,6 +9,7 @@
 using namespace std;
 
 // Global Variables
+#define LIVES 3;
 const int GRID_SIZE = 9; 
 vector<int> NUMBERS = {1, 3, 5, 7, 9, 11, 13, 15, 17};
 vector<vector<int>> solvedGrid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
@@ -29,59 +30,8 @@ bool isCorrect(int row, int col, int element);
 bool  isFilled(vector<vector<int>> grid);
 bool startGame(vector<vector<int>> grid);
 
-bool isCorrect(int row, int col, int element) {
-    if(solvedGrid[row-1][col-1] == element) return true;
-    return false;
-}
 
-bool  isFilled(vector<vector<int>> grid) {
-    for(int i = 0; i<GRID_SIZE; i++) {
-        for(int j = 0; j<GRID_SIZE; j++) {
-            if(grid[i][j] == 0) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
-bool startGame(vector<vector<int>> grid) {
-    int row, col, element;
-    int lives = 3;
-    cout << "Lets Start the game. You have 3 lives." << endl;
-    cout << "If you want to quit enter -1 -1 -1" << endl;
-    while(1) {
-        cout << "Enter element(row, col, element.): " << endl;
-        cin >> row >> col >> element;
-        if( row == -1 and col == -1 and element == -1) {
-            return false;
-        }
-        else if((row or col or element) > 9 or (row or col or element) < 1 ) {
-            cout << "Invalid row, col or element. Enter again." << endl;
-            continue;
-        }
-        if(isCorrect(row, col, element)) {
-            grid[row-1][col-1] = element;
-            printGrid(grid);
-            continue;
-        }
-        else {
-            lives--;
-            cout << "You have entered wrong element. Lives remaining: " << lives << endl;
-        }
-        if(lives == 0) {
-            cout << "You are out of lives" << endl; 
-            cout << "********GAME OVER********" << endl;
-            return false;
-        }
-        if(isFilled(grid)) {
-            cout << "Congratulation You Have WON the game" << endl;
-            return true;
-        }
-
-    }
-    
-}
 
 int main() {
     srand(time(0));
@@ -125,17 +75,121 @@ int main() {
     return 0;
 }
 
+
+bool startGameWithAlp(vector<vector<int>> grid) {
+    int row, col;
+    char ch;
+    int lives = LIVES;
+    cout << "Lets Start the game. You have 3 lives." << endl;
+    cout << "If you want to quit enter -1 -1 -1" << endl;
+    while(1) {
+        cout << "Enter element(row, col, element.): " << endl;
+        cin >> row >> col >> ch;
+        int element = ch - 'A' + 1;
+        if( row == -1 and col == -1 and element == -1) {
+            return false;
+        }
+        else if(row > 9 or row < 1 or col > 9 or col < 1 ) {
+            cout << "Invalid row or col. Enter again." << endl;
+            continue;
+        }
+        if(isCorrect(row, col, element)) {
+            grid[row-1][col-1] = element;
+            printGrid(grid);
+            continue;
+        }
+        else {
+            lives--;
+            cout << "You have entered wrong element. Lives remaining: " << lives << endl;
+        }
+        if(lives == 0) {
+            cout << "You are out of lives" << endl; 
+            cout << "********GAME OVER********" << endl;
+            return false;
+        }
+        if(isFilled(grid)) {
+            cout << "*******Congratulation You Have WON the game*******" << endl;
+            return true;
+        }
+
+    }
+    
+}
+
+
+bool startGame(vector<vector<int>> grid) {
+    if(numTypeChoice == 4) {
+        return startGameWithAlp(grid);
+    }
+    int row, col, element;
+    int lives = LIVES;
+    cout << "Lets Start the game. You have 3 lives." << endl;
+    cout << "If you want to quit enter -1 -1 -1" << endl;
+    while(1) {
+        cout << "Enter element(row, col, element.): " << endl;
+        cin >> row >> col >> element;
+        if( row == -1 and col == -1 and element == -1) {
+            return false;
+        }
+        else if(row > 9 or row < 1 or col > 9 or col < 1 ) {
+            cout << "Invalid row or col. Enter again." << endl;
+            continue;
+        }
+        if(isCorrect(row, col, element)) {
+            grid[row-1][col-1] = element;
+            printGrid(grid);
+            continue;
+        }
+        else {
+            lives--;
+            cout << "You have entered wrong element. Lives remaining: " << lives << endl;
+        }
+        if(lives == 0) {
+            cout << "You are out of lives" << endl; 
+            cout << "********GAME OVER********" << endl;
+            return false;
+        }
+        if(isFilled(grid)) {
+            cout << "*******Congratulation You Have WON the game*******" << endl;
+            return true;
+        }
+
+    }
+    
+}
+
+
+bool  isFilled(vector<vector<int>> grid) {
+    for(int i = 0; i<GRID_SIZE; i++) {
+        for(int j = 0; j<GRID_SIZE; j++) {
+            if(grid[i][j] == 0) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+
+bool isCorrect(int row, int col, int element) {
+    if(solvedGrid[row-1][col-1] == element) return true;
+    return false;
+}
+
+
 void traditionalSudoku(){
     for(int i = 0; i<GRID_SIZE; i++) {
         NUMBERS[i] = i+1;
     }
 }
 
+
 void evenSudoku() {
     for(int i = 0; i<GRID_SIZE; i++) {
         NUMBERS[i] = 2*i + 2; 
     }
 }
+
 
 void chooseSudokuNumType() {
     if(numTypeChoice == 1) {
