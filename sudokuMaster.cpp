@@ -8,6 +8,7 @@
 
 using namespace std;
 
+
 // Global Variables
 #define LIVES 3;
 const int GRID_SIZE = 9; 
