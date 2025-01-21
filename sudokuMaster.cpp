@@ -10,7 +10,7 @@
 using namespace std;
 
 // Global Variables
-#define LIVES 3;
+#define LIVES 3
 const int GRID_SIZE = 9; 
 vector<int> NUMBERS = {1, 3, 5, 7, 9, 11, 13, 15, 17};
 vector<vector<int>> solvedGrid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
