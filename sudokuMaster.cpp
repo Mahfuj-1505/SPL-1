@@ -5,9 +5,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
+#include <algorithm>
 
 using namespace std;
-
 
 // Global Variables
 #define LIVES 3;
@@ -15,6 +15,7 @@ const int GRID_SIZE = 9;
 vector<int> NUMBERS = {1, 3, 5, 7, 9, 11, 13, 15, 17};
 vector<vector<int>> solvedGrid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
 int numTypeChoice;
+
 
 // Function Prototypes
 void traditionalSudoku();
@@ -30,7 +31,10 @@ vector<vector<int>> generateSudoku();
 bool isCorrect(int row, int col, int element);
 bool  isFilled(vector<vector<int>> grid);
 bool startGame(vector<vector<int>> grid);
-
+bool isDiagonalSudokuValid(vector<vector<int>>& grid, int row, int col, int num);
+bool fillDiagonalSudokuGrid(vector<vector<int>>& grid);
+void provideHint(const vector<vector<int>>& grid);
+vector<int> getValidNumbers(int row, int col, const vector<vector<int>>& grid);
 
 
 
@@ -77,6 +81,57 @@ int main() {
 }
 
 
+bool isDiagonalSudokuValid(vector<vector<int>>& grid, int row, int col, int num) {
+    for (int i = 0; i < GRID_SIZE; i++) {
+        if (grid[row][i] == num || grid[i][col] == num) {
+            return false;
+        }
+
+        if (grid[row / 3 * 3 + i / 3][col / 3 * 3 + i % 3] == num) {
+            return false;
+        }
+    }
+
+    if (row == col) {
+        for (int i = 0; i < GRID_SIZE; i++) {
+            if (grid[i][i] == num) {
+                return false;
+            }
+        }
+    }
+
+    if (row + col == GRID_SIZE - 1) {
+        for (int i = 0; i < GRID_SIZE; i++) {
+            if (grid[i][GRID_SIZE - 1 - i] == num) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool fillDiagonalSudokuGrid(vector<vector<int>>& grid) {
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (grid[row][col] == 0) { 
+                for (int num : NUMBERS) {
+                    if (isDiagonalSudokuValid(grid, row, col, num)) {
+                        grid[row][col] = num;
+                        if (fillDiagonalSudokuGrid(grid)) {
+                            return true; 
+                        }
+                        grid[row][col] = 0;
+                    }
+                }
+                return false; 
+            }
+        }
+    }
+    return true; 
+}
+
+
 bool startGameWithAlp(vector<vector<int>> grid) {
     int row, col;
     char ch;
@@ -117,6 +172,69 @@ bool startGameWithAlp(vector<vector<int>> grid) {
     
 }
 
+vector<int> getValidNumbers(int row, int col, const vector<vector<int>>& grid) {
+    vector<int> validNumbers;
+
+    for (int num : NUMBERS) {
+        bool isValid = true;
+
+        for (int i = 0; i < GRID_SIZE; i++) {
+            if (grid[row][i] == num || grid[i][col] == num) {
+                isValid = false;
+                break;
+            }
+        }
+
+        if (isValid) {
+            int startRow = (row / 3) * 3;
+            int startCol = (col / 3) * 3;
+            for (int r = startRow; r < startRow + 3; r++) {
+                for (int c = startCol; c < startCol + 3; c++) {
+                    if (grid[r][c] == num) {
+                        isValid = false;
+                        break;
+                    }
+                }
+                if (!isValid) break;
+            }
+        }
+
+        if (isValid) {
+            validNumbers.push_back(num);
+        }
+    }
+
+    return validNumbers;
+}
+
+
+void provideHint(const vector<vector<int>>& grid) {
+    int minChoices = GRID_SIZE + 1; 
+    int bestRow = -1, bestCol = -1;
+    vector<int> bestChoices;
+
+    for (int row = 0; row < GRID_SIZE; ++row) {
+        for (int col = 0; col < GRID_SIZE; ++col) {
+            if (grid[row][col] == 0) { 
+                vector<int> validNumbers = getValidNumbers(row, col, grid); 
+                if (validNumbers.size() < minChoices) {
+                    minChoices = validNumbers.size();
+                    bestRow = row;
+                    bestCol = col;
+                    bestChoices = validNumbers;
+                }
+            }
+        }
+    }
+
+    if (bestRow != -1 && bestCol != -1) {
+        cout << "Greedy Hint: Cell (" << bestRow + 1 << ", " << bestCol + 1 << ") has " 
+             << bestChoices.size() << " valid choices left. Suggested number: " 
+             << bestChoices[0] << endl;  
+    }
+}
+
+
 
 bool startGame(vector<vector<int>> grid) {
     if(numTypeChoice == 4) {
@@ -124,40 +242,49 @@ bool startGame(vector<vector<int>> grid) {
     }
     int row, col, element;
     int lives = LIVES;
-    cout << "Lets Start the game. You have 3 lives." << endl;
-    cout << "If you want to quit enter -1 -1 -1" << endl;
+    cout << "Let's start the game. You have 3 lives." << endl;
+    cout << "If you want to quit, enter -1 -1 -1." << endl;
+    cout << "If you want a greedy hint, enter 0 0 0." << endl;
+
     while(1) {
-        cout << "Enter element(row, col, element.): " << endl;
+        cout << "Enter element (row, col, element): ";
         cin >> row >> col >> element;
-        if( row == -1 and col == -1 and element == -1) {
+
+        if (row == -1 && col == -1 && element == -1) {
             return false;
         }
-        else if(row > 9 or row < 1 or col > 9 or col < 1 ) {
+        
+        if (row == 0 && col == 0 && element == 0) {
+            provideHint(grid);
+            continue;
+        }
+
+        if (row > 9 || row < 1 || col > 9 || col < 1) {
             cout << "Invalid row or col. Enter again." << endl;
             continue;
         }
-        if(isCorrect(row, col, element)) {
-            grid[row-1][col-1] = element;
+
+        if (isCorrect(row, col, element)) {
+            grid[row - 1][col - 1] = element;
             printGrid(grid);
+            if (isFilled(grid)) {
+                cout << "******* Congratulations! You have WON the game! *******" << endl;
+                return true;
+            }
             continue;
-        }
-        else {
+        } else {
             lives--;
-            cout << "You have entered wrong element. Lives remaining: " << lives << endl;
-        }
-        if(lives == 0) {
-            cout << "You are out of lives" << endl; 
-            cout << "********GAME OVER********" << endl;
-            return false;
-        }
-        if(isFilled(grid)) {
-            cout << "*******Congratulation You Have WON the game*******" << endl;
-            return true;
+            cout << "You have entered the wrong element. Lives remaining: " << lives << endl;
         }
 
+        if (lives == 0) {
+            cout << "You are out of lives" << endl;
+            cout << "******** GAME OVER ********" << endl;
+            return false;
+        }
     }
-    
 }
+
 
 
 bool  isFilled(vector<vector<int>> grid) {
@@ -213,6 +340,7 @@ void chooseSudokuNumType() {
     }
 }
 
+
 void shuffleNumbers() {
     random_device rd; 
     mt19937 rng(rd()); 
@@ -232,6 +360,7 @@ bool isValid(vector<vector<int>>& grid, int row, int col, int num) {
     }
     return true;
 }
+
 
 bool fillGrid(vector<vector<int>>& grid) {
     shuffleNumbers();
@@ -267,6 +396,7 @@ void removeNumbers(vector<vector<int>>& grid, int holes) {
     }
 }
 
+
 void printGridWithAlphabet(const vector<vector<int>>& grid) {
     cout << "+---------+---------+---------+" << endl; 
     
@@ -295,6 +425,7 @@ void printGridWithAlphabet(const vector<vector<int>>& grid) {
     
 
 }
+
 
 void printGrid(const vector<vector<int>>& grid) {
     if(numTypeChoice == 4) {
@@ -350,10 +481,22 @@ void printGrid(const vector<vector<int>>& grid) {
     }
 }
 
+
 vector<vector<int>> generateSudoku() {
     vector<vector<int>> grid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
+    cout << "Which sudoku do you want to play??" << endl;
+    cout << "1. General SUdoku" << endl;
+    cout << "2. Diagonal SUdoku" << endl;
+    cout << "Enter your choice: ";
+    int sudokuTypeChoice;
+    cin >> sudokuTypeChoice;
+    if(sudokuTypeChoice == 1) {
+        fillGrid(grid);
+    }
+    else {
+        fillDiagonalSudokuGrid(grid);
+    }
     
-    fillGrid(grid);
 
     cout << "\nChoose difficulty level:\n";
     cout << "1. Easy (20 to 30 holes)" << endl;
@@ -367,16 +510,16 @@ vector<vector<int>> generateSudoku() {
     int holes;
     switch (choice) {
         case 1:
-            holes = 25; // Easy: 20-30 holes
+            holes = 25; 
             break;
         case 2:
-            holes = 35; // Medium: 30-40 holes
+            holes = 35; 
             break;
         case 3:
-            holes = 45; // Hard: 40-50 holes
+            holes = 45; 
             break;
         case 4:
-            holes = 55; // Expert: 50-60 holes
+            holes = 55; 
             break;
         default:
             cout << "Invalid choice, defaulting to Medium.\n";
@@ -388,3 +531,4 @@ vector<vector<int>> generateSudoku() {
     return grid;
 
 }
+
