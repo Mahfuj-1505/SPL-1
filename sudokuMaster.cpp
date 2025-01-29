@@ -159,6 +159,7 @@ int main() {
 }
 
 
+
 bool isDiagonalSudokuValid(vector<vector<int>>& grid, int row, int col, int num) {
     for (int i = 0; i < GRID_SIZE; i++) {
         if (grid[row][i] == num || grid[i][col] == num) {
