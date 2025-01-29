@@ -9,6 +9,10 @@
 
 using namespace std;
 
+//TODO: WINDOKU, KILLER SUDOKU
+//FIXME: added a shuffle numbers before generating sudoku in main
+
+
 // Global Variables
 #define LIVES 3
 const int GRID_SIZE = 9; 
@@ -21,7 +25,7 @@ int numTypeChoice;
 void traditionalSudoku();
 void evenSudoku();
 void chooseSudokuNumType();
-void shuffleNumbers();
+void shuffleNumbers(vector<int>& NUMBERS);
 bool isValid(vector<vector<int>>& grid, int row, int col, int num);
 void printGridWithAlphabet(const vector<vector<int>>& grid);
 bool fillGrid(vector<vector<int>>& grid);
@@ -36,6 +40,82 @@ bool fillDiagonalSudokuGrid(vector<vector<int>>& grid);
 void provideHint(const vector<vector<int>>& grid);
 vector<int> getValidNumbers(int row, int col, const vector<vector<int>>& grid);
 
+//TODO: add randomInrange and update shuffle number in all the rest of the program
+int randomInRange(int min, int max) {
+    return min + rand() % (max - min + 1);
+}
+
+void shuffleNumbers(vector<int>& NUMBERS) {
+    // Use a random device to seed the random number generator
+    int size = NUMBERS.size();
+    for (int i = size - 1; i > 0; --i) {
+        int j = randomInRange(0, i);
+        swap(NUMBERS[i], NUMBERS[j]);
+    }
+}
+
+bool isValidWindoku(vector<vector<int>>& grid, int row, int col, int num) {
+    // Check row and column
+    for (int i = 0; i < GRID_SIZE; i++) {
+        if (grid[row][i] == num || grid[i][col] == num) {
+            return false;
+        }
+    }
+
+    // Check 3x3 standard subgrid
+    int startRow = (row / 3) * 3;
+    int startCol = (col / 3) * 3;
+    for (int r = startRow; r < startRow + 3; r++) {
+        for (int c = startCol; c < startCol + 3; c++) {
+            if (grid[r][c] == num) {
+                return false;
+            }
+        }
+    }
+
+    // Check Windoku shaded region
+    if ((row >= 1 && row <= 3 && col >= 1 && col <= 3) || 
+        (row >= 1 && row <= 3 && col >= 5 && col <= 7) || 
+        (row >= 5 && row <= 7 && col >= 1 && col <= 3) || 
+        (row >= 5 && row <= 7 && col >= 5 && col <= 7)) {
+        
+        int startWindokuRow = (row >= 5) ? 5 : 1;
+        int startWindokuCol = (col >= 5) ? 5 : 1;
+
+        for (int r = startWindokuRow; r < startWindokuRow + 3; r++) {
+            for (int c = startWindokuCol; c < startWindokuCol + 3; c++) {
+                if (grid[r][c] == num) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool fillWindokuGrid(vector<vector<int>>& grid) {
+    shuffleNumbers(NUMBERS); // Shuffle NUMBERS vector for random placement
+    //shuffleNumbers(); // Shuffle NUMBERS vector for random placement
+    for (int row = 0; row < GRID_SIZE; row++) {
+        for (int col = 0; col < GRID_SIZE; col++) {
+            if (grid[row][col] == 0) {
+                for (int num : NUMBERS) {
+                    if (isValidWindoku(grid, row, col, num)) {
+                        grid[row][col] = num;
+                        if (fillWindokuGrid(grid)) {
+                            return true;
+                        }
+                        grid[row][col] = 0; // Backtrack
+                    }
+                }
+                return false; // No valid number found
+            }
+        }
+    }
+    return true; // Grid filled successfully
+}
+
 
 
 int main() {
@@ -49,7 +129,7 @@ int main() {
     cout << "Enter your choice: ";
     cin >> numTypeChoice;
     chooseSudokuNumType();
-
+    shuffleNumbers(NUMBERS);
     vector<vector<int>> grid = generateSudoku();
     cout << "\nGenerated Sudoku Puzzle:\n";
     printGrid(grid);
@@ -75,8 +155,6 @@ int main() {
         goto beforeChoice;
     }
     
-    
-
     return 0;
 }
 
@@ -341,12 +419,6 @@ void chooseSudokuNumType() {
 }
 
 
-void shuffleNumbers() {
-    random_device rd; 
-    mt19937 rng(rd()); 
-
-    shuffle(NUMBERS.begin(), NUMBERS.end(), rng);
-}
 
 
 bool isValid(vector<vector<int>>& grid, int row, int col, int num) {
@@ -363,7 +435,7 @@ bool isValid(vector<vector<int>>& grid, int row, int col, int num) {
 
 
 bool fillGrid(vector<vector<int>>& grid) {
-    shuffleNumbers();
+    shuffleNumbers(NUMBERS);
     for (int row = 0; row < GRID_SIZE; row++) {
         for (int col = 0; col < GRID_SIZE; col++) {
             if (grid[row][col] == 0) { 
@@ -487,14 +559,22 @@ vector<vector<int>> generateSudoku() {
     cout << "Which sudoku do you want to play??" << endl;
     cout << "1. General SUdoku" << endl;
     cout << "2. Diagonal SUdoku" << endl;
+    cout << "3. Windoku" << endl;
     cout << "Enter your choice: ";
     int sudokuTypeChoice;
     cin >> sudokuTypeChoice;
     if(sudokuTypeChoice == 1) {
         fillGrid(grid);
     }
-    else {
+    else if(sudokuTypeChoice == 2){
         fillDiagonalSudokuGrid(grid);
+    }
+    else if(sudokuTypeChoice == 3){
+        fillWindokuGrid(grid);
+    }
+    else {
+        cout << "Invalid Choice. Defaulting to general sudoku." << endl;
+        fillGrid(grid);
     }
     
 
@@ -510,20 +590,20 @@ vector<vector<int>> generateSudoku() {
     int holes;
     switch (choice) {
         case 1:
-            holes = 25; 
+            holes = 20; 
             break;
         case 2:
-            holes = 35; 
+            holes = 30; 
             break;
         case 3:
-            holes = 45; 
+            holes = 40; 
             break;
         case 4:
-            holes = 55; 
+            holes = 50; 
             break;
         default:
             cout << "Invalid choice, defaulting to Medium.\n";
-            holes = 35;
+            holes = 30;
     }
 
     solvedGrid = grid;
