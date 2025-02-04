@@ -9,8 +9,8 @@
 
 using namespace std;
 
-//TODO: WINDOKU, KILLER SUDOKU
-//FIXME: added a shuffle numbers before generating sudoku in main
+//TODO: WINDOKU(heuristic algorithm), KILLER SUDOKU
+//FIXME: added a shuffle numbers before generating sudoku in main(fixed)
 
 
 // Global Variables
@@ -39,6 +39,78 @@ bool isDiagonalSudokuValid(vector<vector<int>>& grid, int row, int col, int num)
 bool fillDiagonalSudokuGrid(vector<vector<int>>& grid);
 void provideHint(const vector<vector<int>>& grid);
 vector<int> getValidNumbers(int row, int col, const vector<vector<int>>& grid);
+int randomInRange(int min, int max);
+void shuffleNumbers(vector<int>& NUMBERS);
+bool isValidWindoku(vector<vector<int>>& grid, int row, int col, int num);
+bool fillWindokuGrid(vector<vector<int>>& grid);
+void saveSudoku(vector<vector<int>> &grid, int lives);
+
+
+
+
+int main() {
+    srand(time(0));
+
+    cout << "What Elements do you wanna use in the sudoku?" << endl;
+    cout << "1. Traditional Sudoku .(1,2,3......8,9)" << endl;
+    cout << "2. Odd number Sudoku [default].(1,3,5....,15,17)" << endl;
+    cout << "3. Even number Sudoku. (2,4,6....,16,18)" << endl;
+    cout << "4. Alphabet Sudoku. (A, B, C,..., H, I)" << endl;
+    cout << "Enter your choice: ";
+    cin >> numTypeChoice;
+    chooseSudokuNumType();
+    shuffleNumbers(NUMBERS);
+    vector<vector<int>> grid = generateSudoku();
+    cout << "\nGenerated Sudoku Puzzle:\n";
+    printGrid(grid);
+    beforeChoice:
+    int choice;
+    cout << "Press 1 to start solving." << endl; 
+    cout << "Press 2 to see the solution." << endl;
+    cout << "Enter your choice: ";
+    cin >> choice;
+    if(choice == 1) {
+        bool isWon = startGame(grid);
+        if(!isWon) {
+            cout << "\nHere is the solved grid:" << endl;
+            printGrid(solvedGrid);
+        }
+    }
+    else if(choice == 2) {
+        cout << "\nHere is the solved grid:" << endl;
+        printGrid(solvedGrid);
+    }
+    else {
+        cout << "Invalid Choice. Enter again." << endl;
+        goto beforeChoice;
+    }
+    
+    return 0;
+}
+
+
+
+
+void saveSudoku(vector<vector<int>> &grid, int lives) {
+    ofstream outFile("saved.txt");
+    if (!outFile) {
+        cerr << "Error opening file!" << endl;
+        return;
+    }
+
+    for (const auto &row : grid) {
+        for (int num : row) {
+            outFile << num << " ";
+        }
+        outFile << endl;
+    }
+
+    outFile << "Lives: " << lives << endl;
+
+    outFile.close();
+    cout << "Sudoku grid and lives saved successfully." << endl;
+}
+
 
 //TODO: add randomInrange and update shuffle number in all the rest of the program
 int randomInRange(int min, int max) {
@@ -114,48 +186,6 @@ bool fillWindokuGrid(vector<vector<int>>& grid) {
         }
     }
     return true; // Grid filled successfully
-}
-
-
-
-int main() {
-    srand(time(0));
-
-    cout << "What Elements do you wanna use in the sudoku?" << endl;
-    cout << "1. Traditional Sudoku .(1,2,3......8,9)" << endl;
-    cout << "2. Odd number Sudoku [default].(1,3,5....,15,17)" << endl;
-    cout << "3. Even number Sudoku. (2,4,6....,16,18)" << endl;
-    cout << "4. Alphabet Sudoku. (A, B, C,..., H, I)" << endl;
-    cout << "Enter your choice: ";
-    cin >> numTypeChoice;
-    chooseSudokuNumType();
-    shuffleNumbers(NUMBERS);
-    vector<vector<int>> grid = generateSudoku();
-    cout << "\nGenerated Sudoku Puzzle:\n";
-    printGrid(grid);
-    beforeChoice:
-    int choice;
-    cout << "Press 1 to start solving." << endl; 
-    cout << "Press 2 to see the solution." << endl;
-    cout << "Enter your choice: ";
-    cin >> choice;
-    if(choice == 1) {
-        bool isWon = startGame(grid);
-        if(!isWon) {
-            cout << "\nHere is the solved grid:" << endl;
-            printGrid(solvedGrid);
-        }
-    }
-    else if(choice == 2) {
-        cout << "\nHere is the solved grid:" << endl;
-        printGrid(solvedGrid);
-    }
-    else {
-        cout << "Invalid Choice. Enter again." << endl;
-        goto beforeChoice;
-    }
-    
-    return 0;
 }
 
 
@@ -322,17 +352,41 @@ bool startGame(vector<vector<int>> grid) {
     int row, col, element;
     int lives = LIVES;
     cout << "Let's start the game. You have 3 lives." << endl;
-    cout << "If you want to quit, enter -1 -1 -1." << endl;
-    cout << "If you want a greedy hint, enter 0 0 0." << endl;
+    cout << "If you want to quit, enter q or Q or -1 -1 -1." << endl;
+    cout << "If you want a greedy hint, enter h or H or 0 0 0." << endl;
 
     while(1) {
         cout << "Enter element (row, col, element): ";
-        cin >> row >> col >> element;
+        string input;
+        cin >> input;
 
+        // Quit option
+        if (input == "q" || input == "Q") {
+            cout << "You have quit the game." << endl;
+            return false;
+        }
+        // Hint option
+        if(input == "h" or input == "H") {
+            provideHint(grid);
+            continue;
+        }
+
+        if(input == "s" or input == "S") {
+            saveSudoku(grid,LIVES);
+            cout << "The current sudoku grid and live count has been saved in file saved.txt." << endl;
+            return false;
+        }
+
+        // Convert the input to integer if it's not 'q' or 'Q'
+        row = stoi(input);
+        cin >> col >> element;
+
+        // for alterative quit option
         if (row == -1 && col == -1 && element == -1) {
             return false;
         }
         
+        // for alterative hint option
         if (row == 0 && col == 0 && element == 0) {
             provideHint(grid);
             continue;
