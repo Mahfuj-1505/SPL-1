@@ -11,6 +11,7 @@ using namespace std;
 
 // TODO: WINDOKU(heuristic algorithm), KILLER SUDOKU
 // FIXME: added a shuffle numbers before generating sudoku in main(fixed)
+//Testing in linux
 
 // Global Variables
 #define LIVES 3
