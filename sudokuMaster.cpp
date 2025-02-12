@@ -135,7 +135,12 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid) {
             if (grid[row][col] != 0) {
                 sf::Text text;
                 text.setFont(font);
-                text.setString(to_string(grid[row][col]));
+                if (numTypeChoice == 4) {
+                    char ch = grid[row][col] + 'A' - 1;
+                    text.setString(string(1, ch));
+                } else {
+                    text.setString(to_string(grid[row][col]));
+                }
                 text.setCharacterSize(24);
                 text.setFillColor(sf::Color::Black);
                 text.setPosition(col * 60 + 20, row * 60 + 10);
