@@ -20,6 +20,8 @@ int sudokuTypeChoice;
 int difficultyChoice;
 int selectedRow = -1, selectedCol = -1;
 bool highlightMistakes = false; // Global variable to control mistake highlighting
+int hintLimit = 3;              // Limit for the number of hints
+int hintsUsed = 0;              // Counter for hints used
 
 // Function Prototypes
 void traditionalSudoku();
@@ -49,8 +51,7 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid);
 void drawButtons(sf::RenderWindow &window, sf::Font &font);
 void drawMainMenu(sf::RenderWindow &window, sf::Font &font);
 void drawSudokuOptions(sf::RenderWindow &window, sf::Font &font);
-int calculateScore(int difficulty, int lives, int hintsUsed, sf::Time elapsedTime);
-void drawScore(sf::RenderWindow &window, sf::Font &font, int score);
+int calculateScore(int lives, int hintsUsed, sf::Time totalTime, int difficultyChoice);
 
 void drawButton(sf::RenderWindow &window, sf::Font &font, const string &textString, sf::Vector2f position, sf::Color fillColor)
 {
@@ -107,7 +108,7 @@ void drawGameOver(sf::RenderWindow &window, sf::Font &font)
     window.draw(gameOverText);
 }
 
-void drawCongratulation(sf::RenderWindow &window, sf::Font &font)
+void drawCongratulation(sf::RenderWindow &window, sf::Font &font, int score, sf::Time totalTime)
 {
     sf::Text congratsText;
     congratsText.setFont(font);
@@ -117,14 +118,32 @@ void drawCongratulation(sf::RenderWindow &window, sf::Font &font)
     congratsText.setPosition(100, 300);
     window.draw(congratsText);
 
-    drawButton(window, font, "Restart", sf::Vector2f(300, 400), sf::Color::Cyan);
-    drawButton(window, font, "Exit", sf::Vector2f(300, 500), sf::Color::Red);
+    sf::Text scoreText;
+    scoreText.setFont(font);
+    scoreText.setString("Score: " + to_string(score));
+    scoreText.setCharacterSize(24);
+    scoreText.setFillColor(sf::Color::Black);
+    scoreText.setPosition(100, 400);
+    window.draw(scoreText);
+
+    sf::Text timeText;
+    timeText.setFont(font);
+    int minutes = static_cast<int>(totalTime.asSeconds()) / 60;
+    int seconds = static_cast<int>(totalTime.asSeconds()) % 60;
+    timeText.setString("Time Taken: " + to_string(minutes) + " minutes " + to_string(seconds) + " seconds");
+    timeText.setCharacterSize(24);
+    timeText.setFillColor(sf::Color::Black);
+    timeText.setPosition(100, 450);
+    window.draw(timeText);
+
+    drawButton(window, font, "Restart", sf::Vector2f(300, 500), sf::Color::Cyan);
 }
 
-void drawTimer(sf::RenderWindow &window, sf::Font &font, sf::Time elapsedTime)
+void drawTimer(sf::RenderWindow &window, sf::Font &font, sf::Clock &clock)
 {
-    int minutes = static_cast<int>(elapsedTime.asSeconds()) / 60;
-    int seconds = static_cast<int>(elapsedTime.asSeconds()) % 60;
+    sf::Time elapsed = clock.getElapsedTime();
+    int minutes = static_cast<int>(elapsed.asSeconds()) / 60;
+    int seconds = static_cast<int>(elapsed.asSeconds()) % 60;
 
     sf::Text timerText;
     timerText.setFont(font);
@@ -133,46 +152,6 @@ void drawTimer(sf::RenderWindow &window, sf::Font &font, sf::Time elapsedTime)
     timerText.setFillColor(sf::Color::Black);
     timerText.setPosition(700, 50);
     window.draw(timerText);
-}
-
-int calculateScore(int difficulty, int lives, int hintsUsed, sf::Time elapsedTime)
-{
-    int baseScore;
-    switch (difficulty)
-    {
-    case 1:
-        baseScore = 1000;
-        break; // Easy
-    case 2:
-        baseScore = 2000;
-        break; // Medium
-    case 3:
-        baseScore = 3000;
-        break; // Hard
-    case 4:
-        baseScore = 4000;
-        break; // Expert
-    default:
-        baseScore = 1000;
-        break; // Default to Easy
-    }
-
-    int timePenalty = static_cast<int>(elapsedTime.asSeconds()) / 10;
-    int hintPenalty = hintsUsed * 50;
-    int livesBonus = lives * 100;
-
-    return baseScore - timePenalty - hintPenalty + livesBonus;
-}
-
-void drawScore(sf::RenderWindow &window, sf::Font &font, int score)
-{
-    sf::Text scoreText;
-    scoreText.setFont(font);
-    scoreText.setString("Score: " + to_string(score));
-    scoreText.setCharacterSize(24);
-    scoreText.setFillColor(sf::Color::Black);
-    scoreText.setPosition(700, 100);
-    window.draw(scoreText);
 }
 
 int main()
@@ -195,9 +174,9 @@ int main()
     vector<vector<int>> grid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
     string hintMessage = "";
     int lives = LIVES;
-    int hintsUsed = 0;
     sf::Clock gameClock;
     sf::Time savedTime;
+    sf::Time totalTime;
     int score = 0;
 
     while (window.isOpen())
@@ -321,15 +300,22 @@ int main()
                             {
                                 if (selectedRow != -1 && selectedCol != -1)
                                 {
-                                    vector<int> validNumbers = getValidNumbers(selectedRow, selectedCol, grid);
-                                    if (!validNumbers.empty())
+                                    if (hintsUsed < hintLimit)
                                     {
-                                        hintMessage = "Hint: Cell (" + to_string(selectedRow + 1) + ", " + to_string(selectedCol + 1) + ") has " + to_string(validNumbers.size()) + " valid choices: " + to_string(validNumbers[0]);
-                                        hintsUsed++;
+                                        vector<int> validNumbers = getValidNumbers(selectedRow, selectedCol, grid);
+                                        if (!validNumbers.empty())
+                                        {
+                                            hintMessage = "Hint: Cell (" + to_string(selectedRow + 1) + ", " + to_string(selectedCol + 1) + ") has " + to_string(validNumbers.size()) + " valid choices: " + to_string(validNumbers[0]);
+                                            hintsUsed++;
+                                        }
+                                        else
+                                        {
+                                            hintMessage = "Hint: No valid choices available.";
+                                        }
                                     }
                                     else
                                     {
-                                        hintMessage = "Hint: No valid choices available.";
+                                        hintMessage = "Hint limit reached.";
                                     }
                                 }
                                 else
@@ -411,10 +397,11 @@ int main()
                             grid[selectedRow][selectedCol] = num;
                             if (isFilled(grid))
                             {
+                                totalTime = gameClock.getElapsedTime() + savedTime;
+                                score = calculateScore(lives, hintsUsed, totalTime, difficultyChoice);
                                 std::cout << "******* Congratulations! You have WON the game! *******" << std::endl;
                                 inGame = false;
                                 gameWon = true;
-                                score = calculateScore(difficultyChoice, lives, hintsUsed, gameClock.getElapsedTime() + savedTime);
                             }
                         }
                         else
@@ -426,7 +413,6 @@ int main()
                                 std::cout << "******** GAME OVER ********" << std::endl;
                                 inGame = false;
                                 gameOver = true;
-                                score = calculateScore(difficultyChoice, lives, hintsUsed, gameClock.getElapsedTime() + savedTime);
                             }
                         }
                     }
@@ -449,18 +435,15 @@ int main()
             drawButtons(window, font);
             drawHint(window, font, hintMessage);
             drawLives(window, font, lives);
-            drawTimer(window, font, gameClock.getElapsedTime() + savedTime); // Draw the timer
-            drawScore(window, font, score);                                  // Draw the score
+            drawTimer(window, font, gameClock); // Draw the timer
         }
         else if (gameOver)
         {
             drawGameOver(window, font);
-            drawScore(window, font, score); // Draw the score
         }
         else if (gameWon)
         {
-            drawCongratulation(window, font);
-            drawScore(window, font, score); // Draw the score
+            drawCongratulation(window, font, score, totalTime);
         }
         drawButton(window, font, "Exit", sf::Vector2f(700, 750), sf::Color::Red); // Always show exit button
         window.display();
@@ -490,33 +473,27 @@ void drawSudokuOptions(sf::RenderWindow &window, sf::Font &font)
     text.setCharacterSize(24);
     text.setFillColor(sf::Color::Black);
 
-    // Draw the title for Sudoku Elements selection
     text.setString("Choose Sudoku Elements:");
     text.setPosition(50, 50);
     window.draw(text);
 
-    // Button for selecting number type
     drawButton(window, font, "Traditional", sf::Vector2f(50, 100), numTypeChoice == 1 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Odd Numbers", sf::Vector2f(300, 100), numTypeChoice == 2 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Even Numbers", sf::Vector2f(50, 200), numTypeChoice == 3 ? sf::Color::Green : sf::Color::White);
+    drawButton(window, font, "Odd Num", sf::Vector2f(300, 100), numTypeChoice == 2 ? sf::Color::Green : sf::Color::White);
+    drawButton(window, font, "Even Num", sf::Vector2f(50, 200), numTypeChoice == 3 ? sf::Color::Green : sf::Color::White);
     drawButton(window, font, "Alphabet", sf::Vector2f(300, 200), numTypeChoice == 4 ? sf::Color::Green : sf::Color::White);
 
-    // Draw the title for Sudoku version selection
     text.setString("Choose Sudoku Version:");
     text.setPosition(50, 300);
     window.draw(text);
 
-    // Button for selecting sudoku version
     drawButton(window, font, "General", sf::Vector2f(50, 350), sudokuTypeChoice == 1 ? sf::Color::Green : sf::Color::White);
     drawButton(window, font, "Diagonal", sf::Vector2f(300, 350), sudokuTypeChoice == 2 ? sf::Color::Green : sf::Color::White);
     drawButton(window, font, "Windoku", sf::Vector2f(50, 450), sudokuTypeChoice == 3 ? sf::Color::Green : sf::Color::White);
 
-    // Draw the title for Difficulty Level selection
     text.setString("Choose Difficulty Level:");
     text.setPosition(50, 550);
     window.draw(text);
 
-    // Button for selecting difficulty level
     drawButton(window, font, "Easy", sf::Vector2f(50, 600), difficultyChoice == 1 ? sf::Color::Green : sf::Color::White);
     drawButton(window, font, "Medium", sf::Vector2f(300, 600), difficultyChoice == 2 ? sf::Color::Green : sf::Color::White);
     drawButton(window, font, "Hard", sf::Vector2f(50, 700), difficultyChoice == 3 ? sf::Color::Green : sf::Color::White);
@@ -607,8 +584,8 @@ void drawButtons(sf::RenderWindow &window, sf::Font &font)
     drawButton(window, font, "Load", sf::Vector2f(200, 650), sf::Color::Cyan);
     drawButton(window, font, "Hint", sf::Vector2f(350, 650), sf::Color::Cyan);
     drawButton(window, font, "Solve", sf::Vector2f(500, 650), sf::Color::Cyan);
-    drawButton(window, font, "Restart", sf::Vector2f(50, 750), sf::Color::Green);
-    drawButton(window, font, "Main Menu", sf::Vector2f(200, 750), sf::Color::Magenta);
+    drawButton(window, font, "Restart", sf::Vector2f(50, 750), sf::Color::Magenta);    // Changed color to Magenta
+    drawButton(window, font, "Main Menu", sf::Vector2f(200, 750), sf::Color::Magenta); // Changed color to Magenta
     drawButton(window, font, "Exit", sf::Vector2f(700, 750), sf::Color::Green);
 }
 
@@ -1426,7 +1403,7 @@ vector<vector<int>> generateSudoku()
     switch (difficultyChoice)
     {
     case 1:
-        holes = 20;
+        holes = 25;
         break;
     case 2:
         holes = 30;
@@ -1445,4 +1422,30 @@ vector<vector<int>> generateSudoku()
     solvedGrid = grid;
     removeNumbers(grid, holes);
     return grid;
+}
+
+int calculateScore(int lives, int hintsUsed, sf::Time totalTime, int difficultyChoice)
+{
+    int baseScore;
+    switch (difficultyChoice)
+    {
+    case 1:
+        baseScore = 1500; // Easy
+        break;
+    case 2:
+        baseScore = 2000; // Medium
+        break;
+    case 3:
+        baseScore = 2500; // Hard
+        break;
+    case 4:
+        baseScore = 3000; // Expert
+        break;
+    default:
+        baseScore = 1500; // Default to Easy
+    }
+    int timePenalty = static_cast<int>(totalTime.asSeconds()) / 60;
+    int hintPenalty = hintsUsed * 25;
+    int livesBonus = lives * 100;
+    return baseScore - timePenalty - hintPenalty + livesBonus;
 }
