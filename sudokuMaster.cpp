@@ -20,7 +20,7 @@ int sudokuTypeChoice;
 int difficultyChoice;
 int selectedRow = -1, selectedCol = -1;
 bool highlightMistakes = false; // Global variable to control mistake highlighting
-int hintLimit = 3;              // Limit for the number of hints
+int hintLimit = 5;              // Limit for the number of hints
 int hintsUsed = 0;              // Counter for hints used
 
 // Function Prototypes
