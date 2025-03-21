@@ -9,6 +9,7 @@
 #include <algorithm>
 
 using namespace std;
+using namespace sf;
 
 // Global Variables
 #define LIVES 3
@@ -45,124 +46,164 @@ int randomInRange(int min, int max);
 void shuffleNumbers(vector<int> &NUMBERS);
 bool isValidWindoku(vector<vector<int>> &grid, int row, int col, int num);
 bool fillWindokuGrid(vector<vector<int>> &grid);
-void saveSudoku(vector<vector<int>> &grid, int lives, sf::Time elapsedTime);
-void loadSudoku(vector<vector<int>> &grid, int &lives, sf::Time &elapsedTime);
-void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid);
-void drawButtons(sf::RenderWindow &window, sf::Font &font);
-void drawMainMenu(sf::RenderWindow &window, sf::Font &font);
-void drawSudokuOptions(sf::RenderWindow &window, sf::Font &font);
-int calculateScore(int lives, int hintsUsed, sf::Time totalTime, int difficultyChoice);
+void saveSudoku(vector<vector<int>> &grid, int lives, Time elapsedTime);
+void loadSudoku(vector<vector<int>> &grid, int &lives, Time &elapsedTime);
+void drawGrid(RenderWindow &window, const vector<vector<int>> &grid, const vector<vector<int>> &wrongEntries);
+void drawButtons(RenderWindow &window, Font &font);
+void drawMainMenu(RenderWindow &window, Font &font);
+void drawSudokuOptions(RenderWindow &window, Font &font);
+int calculateScore(int lives, int hintsUsed, Time totalTime, int difficultyChoice);
+void drawButton(RenderWindow &window, Font &font, const string &textString, Vector2f position, Color fillColor);
+void drawHint(RenderWindow &window, Font &font, const string &hint);
+void drawLives(RenderWindow &window, Font &font, int lives);
+void drawGameOver(RenderWindow &window, Font &font);
+void drawCongratulation(RenderWindow &window, Font &font, int score, Time totalTime);
+void drawTimer(RenderWindow &window, Font &font, Clock &clock, int hintsRemaining);
+bool applyXWing(vector<vector<int>> &grid, int num);
+bool applySwordfish(vector<vector<int>> &grid, int num);
+bool solveSudoku(vector<vector<int>> &grid);
+void applyAdvancedTechniques(vector<vector<int>> &grid);
 
-void drawButton(sf::RenderWindow &window, sf::Font &font, const string &textString, sf::Vector2f position, sf::Color fillColor)
+//
+void drawButton(RenderWindow &window, Font &font, const string &textString, Vector2f position, Color fillColor)
 {
-    sf::RectangleShape button(sf::Vector2f(200, 50));
+    RectangleShape button(Vector2f(200, 50));
     button.setPosition(position);
     button.setFillColor(fillColor);
     button.setOutlineThickness(2);
-    button.setOutlineColor(sf::Color::Black);
+    button.setOutlineColor(Color::Black);
     window.draw(button);
 
-    sf::Text text;
+    Text text;
     text.setFont(font);
     text.setString(textString);
     text.setCharacterSize(24);
-    text.setFillColor(sf::Color::Black);
+    text.setFillColor(Color::Black);
     text.setPosition(position.x + 50, position.y + 10);
     window.draw(text);
 }
 
-void drawHint(sf::RenderWindow &window, sf::Font &font, const string &hint)
+void drawHint(RenderWindow &window, Font &font, const string &hint)
 {
-    sf::Text hintText;
+    Text hintText;
     hintText.setFont(font);
     hintText.setString(hint);
     hintText.setCharacterSize(24);
-    hintText.setFillColor(sf::Color::Black);
+    hintText.setFillColor(Color::Black);
     hintText.setPosition(50, 700);
     window.draw(hintText);
 }
 
-void drawLives(sf::RenderWindow &window, sf::Font &font, int lives)
+void drawLives(RenderWindow &window, Font &font, int lives)
 {
     // Create a string with lives and a heart emoji
-    std::wstring livesString = L"Lives: " + std::wstring(lives, L'\u2764'); // L'\u2764' represents the heart emoji
+    wstring livesString = L"Lives: " + wstring(lives, L'\u2764'); // L'\u2764' represents the heart emoji
 
     // Create text using the font and string
-    sf::Text livesText(livesString, font, 50); // Use an appropriate font size
+    Text livesText(livesString, font, 50); // Use an appropriate font size
 
     // Set text color (you can adjust the color as needed)
-    livesText.setFillColor(sf::Color::Red);
+    livesText.setFillColor(Color::Red);
 
     // Draw the text on the window
     window.draw(livesText);
 }
 
-void drawGameOver(sf::RenderWindow &window, sf::Font &font)
+void drawGameOver(RenderWindow &window, Font &font)
 {
-    sf::Text gameOverText;
+    Text gameOverText;
     gameOverText.setFont(font);
     gameOverText.setString("   \tYou are out of lives\n******** GAME OVER ********");
     gameOverText.setCharacterSize(36);
-    gameOverText.setFillColor(sf::Color::Red);
+    gameOverText.setFillColor(Color::Red);
     gameOverText.setPosition(200, 300);
     window.draw(gameOverText);
+
+    drawButton(window, font, "Restart", Vector2f(300, 500), Color::Cyan);
+    drawButton(window, font, "Main Menu", Vector2f(300, 600), Color::Magenta);
 }
 
-void drawCongratulation(sf::RenderWindow &window, sf::Font &font, int score, sf::Time totalTime)
+void drawCongratulation(RenderWindow &window, Font &font, int score, Time totalTime)
 {
-    sf::Text congratsText;
+    Text congratsText;
     congratsText.setFont(font);
     congratsText.setString("******* Congratulations! *******\n You have WON the game! ");
     congratsText.setCharacterSize(36);
-    congratsText.setFillColor(sf::Color::Green);
+    congratsText.setFillColor(Color::Green);
     congratsText.setPosition(100, 300);
     window.draw(congratsText);
 
-    sf::Text scoreText;
+    Text scoreText;
     scoreText.setFont(font);
     scoreText.setString("Score: " + to_string(score));
     scoreText.setCharacterSize(24);
-    scoreText.setFillColor(sf::Color::Black);
+    scoreText.setFillColor(Color::Black);
     scoreText.setPosition(100, 400);
     window.draw(scoreText);
 
-    sf::Text timeText;
+    Text timeText;
     timeText.setFont(font);
     int minutes = static_cast<int>(totalTime.asSeconds()) / 60;
     int seconds = static_cast<int>(totalTime.asSeconds()) % 60;
     timeText.setString("Time Taken: " + to_string(minutes) + " minutes " + to_string(seconds) + " seconds");
     timeText.setCharacterSize(24);
-    timeText.setFillColor(sf::Color::Black);
+    timeText.setFillColor(Color::Black);
     timeText.setPosition(100, 450);
     window.draw(timeText);
 
-    drawButton(window, font, "Restart", sf::Vector2f(300, 500), sf::Color::Cyan);
+    drawButton(window, font, "Restart", Vector2f(300, 500), Color::Cyan);
+    drawButton(window, font, "Main Menu", Vector2f(300, 600), Color::Magenta);
 }
 
-void drawTimer(sf::RenderWindow &window, sf::Font &font, sf::Clock &clock)
+void drawTimer(RenderWindow &window, Font &font, Clock &clock, int hintsRemaining)
 {
-    sf::Time elapsed = clock.getElapsedTime();
+    Time elapsed = clock.getElapsedTime();
     int minutes = static_cast<int>(elapsed.asSeconds()) / 60;
     int seconds = static_cast<int>(elapsed.asSeconds()) % 60;
 
-    sf::Text timerText;
+    Text timerText;
     timerText.setFont(font);
     timerText.setString("Time: " + to_string(minutes) + ":" + (seconds < 10 ? "0" : "") + to_string(seconds));
     timerText.setCharacterSize(24);
-    timerText.setFillColor(sf::Color::Black);
+    timerText.setFillColor(Color::Black);
     timerText.setPosition(700, 50);
     window.draw(timerText);
+
+    Text hintsText;
+    hintsText.setFont(font);
+    hintsText.setString("Hints left: " + to_string(hintLimit - hintsUsed));
+    hintsText.setCharacterSize(24);
+    hintsText.setFillColor(Color::Black);
+    hintsText.setPosition(700, 80);
+    window.draw(hintsText);
+}
+
+bool solveWithAdvancedTechniques(vector<vector<int>> &grid)
+{
+    vector<vector<int>> tempGrid = grid;
+    applyAdvancedTechniques(tempGrid);
+    return solveSudoku(tempGrid);
+}
+
+bool isCorrect(int row, int col, int element)
+{
+    vector<vector<int>> tempGrid = solvedGrid;
+    if (solveWithAdvancedTechniques(tempGrid) && tempGrid[row - 1][col - 1] == element)
+    {
+        return true;
+    }
+    return solvedGrid[row - 1][col - 1] == element;
 }
 
 int main()
 {
     srand(time(0));
 
-    sf::RenderWindow window(sf::VideoMode(900, 900), "Sudoku Main Menu");
-    sf::Font font;
+    RenderWindow window(VideoMode(900, 900), "Sudoku Main Menu");
+    Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
     {
-        std::cerr << "Error loading font" << std::endl;
+        cerr << "Error loading font" << endl;
         return -1;
     }
 
@@ -172,23 +213,24 @@ int main()
     bool gameOver = false;
     bool gameWon = false;
     vector<vector<int>> grid(GRID_SIZE, vector<int>(GRID_SIZE, 0));
+    vector<vector<int>> wrongEntries(GRID_SIZE, vector<int>(GRID_SIZE, 0)); // Track wrong entries
     string hintMessage = "";
     int lives = LIVES;
-    sf::Clock gameClock;
-    sf::Time savedTime;
-    sf::Time totalTime;
+    Clock gameClock;
+    Time savedTime;
+    Time totalTime;
     int score = 0;
 
     while (window.isOpen())
     {
-        sf::Event event;
+        Event event;
         while (window.pollEvent(event))
         {
-            if (event.type == sf::Event::Closed)
+            if (event.type == Event::Closed)
                 window.close();
-            if (event.type == sf::Event::MouseButtonPressed)
+            if (event.type == Event::MouseButtonPressed)
             {
-                if (event.mouseButton.button == sf::Mouse::Left)
+                if (event.mouseButton.button == Mouse::Left)
                 {
                     int x = event.mouseButton.x;
                     int y = event.mouseButton.y;
@@ -272,9 +314,11 @@ int main()
                             chooseSudokuNumType();
                             shuffleNumbers(NUMBERS);
                             grid = generateSudoku();
+                            wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0)); // Reset wrong entries
                             inOptions = false;
                             inGame = true;
                             gameClock.restart(); // Restart the timer when the game starts
+                            lives = LIVES;       // Reset lives at the start of each game
                         }
                     }
                     else if (inGame)
@@ -333,7 +377,9 @@ int main()
                             if (x > 50 && x < 150)
                             {
                                 grid = generateSudoku();
-                                gameClock.restart(); // Restart the timer when the game restarts
+                                wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0)); // Reset wrong entries
+                                gameClock.restart();                                                      // Restart the timer when the game restarts
+                                lives = LIVES;                                                            // Reset lives at the start of each game
                             }
                             else if (x > 200 && x < 300)
                             {
@@ -350,14 +396,19 @@ int main()
                     {
                         if (x > 300 && x < 500)
                         {
-                            if (y > 400 && y < 450)
+                            if (y > 500 && y < 550)
+                            {
+                                grid = generateSudoku();
+                                wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0)); // Reset wrong entries
+                                gameOver = false;
+                                inGame = true;
+                                gameClock.restart(); // Restart the timer when the game restarts
+                                lives = LIVES;       // Reset lives at the start of each game
+                            }
+                            else if (y > 600 && y < 650)
                             {
                                 inMainMenu = true;
                                 gameOver = false;
-                            }
-                            else if (y > 500 && y < 550)
-                            {
-                                window.close();
                             }
                         }
                     }
@@ -365,16 +416,19 @@ int main()
                     {
                         if (x > 300 && x < 500)
                         {
-                            if (y > 400 && y < 450)
+                            if (y > 500 && y < 550)
                             {
                                 grid = generateSudoku();
+                                wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0)); // Reset wrong entries
                                 gameWon = false;
                                 inGame = true;
                                 gameClock.restart(); // Restart the timer when the game restarts
+                                lives = LIVES;       // Reset lives at the start of each game
                             }
-                            else if (y > 500 && y < 550)
+                            else if (y > 600 && y < 650)
                             {
-                                window.close();
+                                inMainMenu = true;
+                                gameWon = false;
                             }
                         }
                     }
@@ -385,21 +439,22 @@ int main()
                     }
                 }
             }
-            else if (inGame && event.type == sf::Event::KeyPressed)
+            else if (inGame && event.type == Event::KeyPressed)
             {
                 if (selectedRow != -1 && selectedCol != -1)
                 {
-                    if (event.key.code >= sf::Keyboard::Num1 && event.key.code <= sf::Keyboard::Num9)
+                    if (event.key.code >= Keyboard::Num1 && event.key.code <= Keyboard::Num9)
                     {
-                        int num = event.key.code - sf::Keyboard::Num1 + 1;
+                        int num = event.key.code - Keyboard::Num1 + 1;
                         if (isCorrect(selectedRow + 1, selectedCol + 1, num))
                         {
                             grid[selectedRow][selectedCol] = num;
+                            wrongEntries[selectedRow][selectedCol] = 0; // Clear wrong entry
                             if (isFilled(grid))
                             {
                                 totalTime = gameClock.getElapsedTime() + savedTime;
                                 score = calculateScore(lives, hintsUsed, totalTime, difficultyChoice);
-                                std::cout << "******* Congratulations! You have WON the game! *******" << std::endl;
+                                cout << "******* Congratulations! You have WON the game! *******" << endl;
                                 inGame = false;
                                 gameWon = true;
                             }
@@ -407,10 +462,12 @@ int main()
                         else
                         {
                             lives--;
+                            hintMessage = "Wrong number! Lives remaining: " + to_string(lives);
+                            wrongEntries[selectedRow][selectedCol] = num; // Track wrong entry
                             if (lives == 0)
                             {
-                                std::cout << "    You are out of lives    " << std::endl;
-                                std::cout << "******** GAME OVER ********" << std::endl;
+                                cout << "    You are out of lives    " << endl;
+                                cout << "******** GAME OVER ********" << endl;
                                 inGame = false;
                                 gameOver = true;
                             }
@@ -420,7 +477,7 @@ int main()
             }
         }
 
-        window.clear(sf::Color::White);
+        window.clear(Color::White);
         if (inMainMenu)
         {
             drawMainMenu(window, font);
@@ -431,11 +488,11 @@ int main()
         }
         else if (inGame)
         {
-            drawGrid(window, grid);
+            drawGrid(window, grid, wrongEntries);
             drawButtons(window, font);
             drawHint(window, font, hintMessage);
             drawLives(window, font, lives);
-            drawTimer(window, font, gameClock); // Draw the timer
+            drawTimer(window, font, gameClock, hintLimit - hintsUsed); // Draw the timer and hints remaining
         }
         else if (gameOver)
         {
@@ -445,67 +502,67 @@ int main()
         {
             drawCongratulation(window, font, score, totalTime);
         }
-        drawButton(window, font, "Exit", sf::Vector2f(700, 750), sf::Color::Red); // Always show exit button
+        drawButton(window, font, "Exit", Vector2f(700, 750), Color::Red); // Always show exit button
         window.display();
     }
 
     return 0;
 }
 
-void drawMainMenu(sf::RenderWindow &window, sf::Font &font)
+void drawMainMenu(RenderWindow &window, Font &font)
 {
-    sf::Text title;
+    Text title;
     title.setFont(font);
     title.setString("Sudoku Game");
     title.setCharacterSize(48);
-    title.setFillColor(sf::Color::Black);
+    title.setFillColor(Color::Black);
     title.setPosition(200, 100);
     window.draw(title);
 
-    drawButton(window, font, "New Game", sf::Vector2f(300, 300), sf::Color::Green);
-    drawButton(window, font, "Load Game", sf::Vector2f(300, 400), sf::Color::Blue);
+    drawButton(window, font, "New Game", Vector2f(300, 300), Color::Green);
+    drawButton(window, font, "Load Game", Vector2f(300, 400), Color::Blue);
 }
 
-void drawSudokuOptions(sf::RenderWindow &window, sf::Font &font)
+void drawSudokuOptions(RenderWindow &window, Font &font)
 {
-    sf::Text text;
+    Text text;
     text.setFont(font);
     text.setCharacterSize(24);
-    text.setFillColor(sf::Color::Black);
+    text.setFillColor(Color::Black);
 
     text.setString("Choose Sudoku Elements:");
     text.setPosition(50, 50);
     window.draw(text);
 
-    drawButton(window, font, "Traditional", sf::Vector2f(50, 100), numTypeChoice == 1 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Odd Num", sf::Vector2f(300, 100), numTypeChoice == 2 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Even Num", sf::Vector2f(50, 200), numTypeChoice == 3 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Alphabet", sf::Vector2f(300, 200), numTypeChoice == 4 ? sf::Color::Green : sf::Color::White);
+    drawButton(window, font, "Traditional", Vector2f(50, 100), numTypeChoice == 1 ? Color::Green : Color::White);
+    drawButton(window, font, "Odd Num", Vector2f(300, 100), numTypeChoice == 2 ? Color::Green : Color::White);
+    drawButton(window, font, "Even Num", Vector2f(50, 200), numTypeChoice == 3 ? Color::Green : Color::White);
+    drawButton(window, font, "Alphabet", Vector2f(300, 200), numTypeChoice == 4 ? Color::Green : Color::White);
 
     text.setString("Choose Sudoku Version:");
     text.setPosition(50, 300);
     window.draw(text);
 
-    drawButton(window, font, "General", sf::Vector2f(50, 350), sudokuTypeChoice == 1 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Diagonal", sf::Vector2f(300, 350), sudokuTypeChoice == 2 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Windoku", sf::Vector2f(50, 450), sudokuTypeChoice == 3 ? sf::Color::Green : sf::Color::White);
+    drawButton(window, font, "General", Vector2f(50, 350), sudokuTypeChoice == 1 ? Color::Green : Color::White);
+    drawButton(window, font, "Diagonal", Vector2f(300, 350), sudokuTypeChoice == 2 ? Color::Green : Color::White);
+    drawButton(window, font, "Windoku", Vector2f(50, 450), sudokuTypeChoice == 3 ? Color::Green : Color::White);
 
     text.setString("Choose Difficulty Level:");
     text.setPosition(50, 550);
     window.draw(text);
 
-    drawButton(window, font, "Easy", sf::Vector2f(50, 600), difficultyChoice == 1 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Medium", sf::Vector2f(300, 600), difficultyChoice == 2 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Hard", sf::Vector2f(50, 700), difficultyChoice == 3 ? sf::Color::Green : sf::Color::White);
-    drawButton(window, font, "Expert", sf::Vector2f(300, 700), difficultyChoice == 4 ? sf::Color::Green : sf::Color::White);
+    drawButton(window, font, "Easy", Vector2f(50, 600), difficultyChoice == 1 ? Color::Green : Color::White);
+    drawButton(window, font, "Medium", Vector2f(300, 600), difficultyChoice == 2 ? Color::Green : Color::White);
+    drawButton(window, font, "Hard", Vector2f(50, 700), difficultyChoice == 3 ? Color::Green : Color::White);
+    drawButton(window, font, "Expert", Vector2f(300, 700), difficultyChoice == 4 ? Color::Green : Color::White);
 }
 
-void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid)
+void drawGrid(RenderWindow &window, const vector<vector<int>> &grid, const vector<vector<int>> &wrongEntries)
 {
-    sf::Font font;
+    Font font;
     if (!font.loadFromFile("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
     {
-        std::cerr << "Error loading font" << std::endl;
+        cerr << "Error loading font" << endl;
         return;
     }
 
@@ -513,10 +570,10 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid)
     {
         for (int col = 0; col < GRID_SIZE; col++)
         {
-            sf::RectangleShape cell(sf::Vector2f(60, 60));
+            RectangleShape cell(Vector2f(60, 60));
             cell.setPosition(col * 60 + 100, row * 60 + 50);
             cell.setOutlineThickness(1);
-            cell.setOutlineColor(sf::Color::Black);
+            cell.setOutlineColor(Color::Black);
 
             // Highlight Windoku subgrids
             if ((row >= 1 && row <= 3 && col >= 1 && col <= 3) ||
@@ -524,36 +581,40 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid)
                 (row >= 5 && row <= 7 && col >= 1 && col <= 3) ||
                 (row >= 5 && row <= 7 && col >= 5 && col <= 7))
             {
-                cell.setFillColor(sf::Color(200, 200, 200));
+                cell.setFillColor(Color(200, 200, 200));
             }
 
             if (row == selectedRow && col == selectedCol)
             {
-                cell.setFillColor(sf::Color(150, 150, 150));
+                cell.setFillColor(Color(150, 150, 150));
             }
             window.draw(cell);
 
-            if (grid[row][col] != 0)
+            if (grid[row][col] != 0 || wrongEntries[row][col] != 0)
             {
-                sf::Text text;
+                Text text;
                 text.setFont(font);
                 if (numTypeChoice == 4)
                 {
-                    char ch = grid[row][col] + 'A' - 1;
+                    char ch = (grid[row][col] != 0) ? grid[row][col] + 'A' - 1 : wrongEntries[row][col] + 'A' - 1;
                     text.setString(string(1, ch));
                 }
                 else
                 {
-                    text.setString(to_string(grid[row][col]));
+                    text.setString(to_string((grid[row][col] != 0) ? grid[row][col] : wrongEntries[row][col]));
                 }
                 text.setCharacterSize(24);
                 if (highlightMistakes && !isCorrect(row + 1, col + 1, grid[row][col]))
                 {
-                    text.setFillColor(sf::Color::Red);
+                    text.setFillColor(Color::Red);
+                }
+                else if (wrongEntries[row][col] != 0)
+                {
+                    text.setFillColor(Color::Red);
                 }
                 else
                 {
-                    text.setFillColor(sf::Color::Black);
+                    text.setFillColor(Color::Black);
                 }
                 text.setPosition(col * 60 + 120, row * 60 + 60);
                 window.draw(text);
@@ -562,15 +623,15 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid)
     }
 
     // Draw thicker lines for 3x3 subgrid boundaries
-    sf::RectangleShape thickLine(sf::Vector2f(540, 3)); // Horizontal line
-    thickLine.setFillColor(sf::Color::Black);
+    RectangleShape thickLine(Vector2f(540, 3)); // Horizontal line
+    thickLine.setFillColor(Color::Black);
     for (int i = 1; i < 3; i++)
     {
         thickLine.setPosition(100, i * 180 + 50);
         window.draw(thickLine);
     }
 
-    thickLine.setSize(sf::Vector2f(3, 540)); // Vertical line
+    thickLine.setSize(Vector2f(3, 540)); // Vertical line
     for (int i = 1; i < 3; i++)
     {
         thickLine.setPosition(i * 180 + 100, 50);
@@ -578,23 +639,23 @@ void drawGrid(sf::RenderWindow &window, const vector<vector<int>> &grid)
     }
 }
 
-void drawButtons(sf::RenderWindow &window, sf::Font &font)
+void drawButtons(RenderWindow &window, Font &font)
 {
-    drawButton(window, font, "Save", sf::Vector2f(50, 650), sf::Color::Cyan);
-    drawButton(window, font, "Load", sf::Vector2f(200, 650), sf::Color::Cyan);
-    drawButton(window, font, "Hint", sf::Vector2f(350, 650), sf::Color::Cyan);
-    drawButton(window, font, "Solve", sf::Vector2f(500, 650), sf::Color::Cyan);
-    drawButton(window, font, "Restart", sf::Vector2f(50, 750), sf::Color::Magenta);    // Changed color to Magenta
-    drawButton(window, font, "Main Menu", sf::Vector2f(200, 750), sf::Color::Magenta); // Changed color to Magenta
-    drawButton(window, font, "Exit", sf::Vector2f(700, 750), sf::Color::Green);
+    drawButton(window, font, "Save", Vector2f(50, 650), Color::Cyan);
+    drawButton(window, font, "Load", Vector2f(200, 650), Color::Cyan);
+    drawButton(window, font, "Hint", Vector2f(350, 650), Color::Cyan);
+    drawButton(window, font, "Solve", Vector2f(500, 650), Color::Cyan);
+    drawButton(window, font, "Restart", Vector2f(50, 750), Color::Magenta);    // Changed color to Magenta
+    drawButton(window, font, "Main Menu", Vector2f(200, 750), Color::Magenta); // Changed color to Magenta
+    drawButton(window, font, "Exit", Vector2f(700, 750), Color::Green);
 }
 
-void saveSudoku(vector<vector<int>> &grid, int lives, sf::Time elapsedTime)
+void saveSudoku(vector<vector<int>> &grid, int lives, Time elapsedTime)
 {
     ofstream outFile("saved.txt");
     if (!outFile)
     {
-        std::cerr << "Error opening file!" << std::endl;
+        cerr << "Error opening file!" << endl;
         return;
     }
 
@@ -604,22 +665,22 @@ void saveSudoku(vector<vector<int>> &grid, int lives, sf::Time elapsedTime)
         {
             outFile << num << " ";
         }
-        outFile << std::endl;
+        outFile << endl;
     }
 
-    outFile << "Lives: " << lives << std::endl;
-    outFile << "Time: " << elapsedTime.asSeconds() << std::endl;
+    outFile << "Lives: " << lives << endl;
+    outFile << "Time: " << elapsedTime.asSeconds() << endl;
 
     outFile.close();
-    std::cout << "Sudoku grid, lives, and time saved successfully." << std::endl;
+    cout << "Sudoku grid, lives, and time saved successfully." << endl;
 }
 
-void loadSudoku(vector<vector<int>> &grid, int &lives, sf::Time &elapsedTime)
+void loadSudoku(vector<vector<int>> &grid, int &lives, Time &elapsedTime)
 {
     ifstream inFile("saved.txt");
     if (!inFile)
     {
-        std::cerr << "Error opening file!" << std::endl;
+        cerr << "Error opening file!" << endl;
         return;
     }
 
@@ -640,7 +701,7 @@ void loadSudoku(vector<vector<int>> &grid, int &lives, sf::Time &elapsedTime)
     elapsedTime = sf::seconds(seconds);
 
     inFile.close();
-    std::cout << "Sudoku grid, lives, and time loaded successfully." << std::endl;
+    cout << "Sudoku grid, lives, and time loaded successfully." << endl;
 }
 
 // Add the rest of your functions here, keeping the logic the same as in your original code.
@@ -942,12 +1003,12 @@ bool startGameWithAlp(vector<vector<int>> grid)
     int row, col;
     char ch;
     int lives = LIVES;
-    std::cout << "Lets Start the game. You have 3 lives." << std::endl;
-    std::cout << "If you want to quit enter -1 -1 -1" << std::endl;
+    cout << "Lets Start the game. You have 3 lives." << endl;
+    cout << "If you want to quit enter -1 -1 -1" << endl;
     while (1)
     {
-        std::cout << "Enter element(row, col, element.): " << std::endl;
-        std::cin >> row >> col >> ch;
+        cout << "Enter element(row, col, element.): " << endl;
+        cin >> row >> col >> ch;
         int element = ch - 'A' + 1;
         if (row == -1 and col == -1 and element == -1)
         {
@@ -955,7 +1016,7 @@ bool startGameWithAlp(vector<vector<int>> grid)
         }
         else if (row > 9 or row < 1 or col > 9 or col < 1)
         {
-            std::cout << "Invalid row or col. Enter again." << std::endl;
+            cout << "Invalid row or col. Enter again." << endl;
             continue;
         }
         if (isCorrect(row, col, element))
@@ -967,17 +1028,17 @@ bool startGameWithAlp(vector<vector<int>> grid)
         else
         {
             lives--;
-            std::cout << "You have entered wrong element. Lives remaining: " << lives << std::endl;
+            cout << "You have entered wrong element. Lives remaining: " << lives << endl;
         }
         if (lives == 0)
         {
-            std::cout << "   You are out of lives  " << std::endl;
-            std::cout << "********GAME OVER********" << std::endl;
+            cout << "   You are out of lives  " << endl;
+            cout << "********GAME OVER********" << endl;
             return false;
         }
         if (isFilled(grid))
         {
-            std::cout << "*******Congratulation You Have WON the game*******" << std::endl;
+            cout << "*******Congratulation You Have WON the game*******" << endl;
             return true;
         }
     }
@@ -1054,9 +1115,9 @@ void provideHint(const vector<vector<int>> &grid)
 
     if (bestRow != -1 && bestCol != -1)
     {
-        std::cout << "Greedy Hint: Cell (" << bestRow + 1 << ", " << bestCol + 1 << ") has "
-                  << bestChoices.size() << " valid choices left. Suggested number: "
-                  << bestChoices[0] << std::endl;
+        cout << "Greedy Hint: Cell (" << bestRow + 1 << ", " << bestCol + 1 << ") has "
+             << bestChoices.size() << " valid choices left. Suggested number: "
+             << bestChoices[0] << endl;
     }
 }
 
@@ -1068,21 +1129,21 @@ bool startGame(vector<vector<int>> grid)
     }
     int row, col, element;
     int lives = LIVES;
-    std::cout << "Let's start the game. You have 3 lives." << std::endl;
-    std::cout << "If you want to quit, enter q or Q or -1 -1 -1." << std::endl;
-    std::cout << "Enter H or h for a greedy hint." << std::endl;
-    std::cout << "Enter S or s to save the current game." << std::endl;
+    cout << "Let's start the game. You have 3 lives." << endl;
+    cout << "If you want to quit, enter q or Q or -1 -1 -1." << endl;
+    cout << "Enter H or h for a greedy hint." << endl;
+    cout << "Enter S or s to save the current game." << endl;
 
     while (1)
     {
-        std::cout << "Enter element (row, col, element): ";
+        cout << "Enter element (row, col, element): ";
         string input;
-        std::cin >> input;
+        cin >> input;
 
         // Quit option
         if (input == "q" || input == "Q")
         {
-            std::cout << "You have quit the game." << std::endl;
+            cout << "You have quit the game." << endl;
             return false;
         }
         // Hint option
@@ -1094,14 +1155,14 @@ bool startGame(vector<vector<int>> grid)
 
         if (input == "s" or input == "S")
         {
-            saveSudoku(grid, lives, sf::seconds(0));
-            std::cout << "The current sudoku grid, live count, and time have been saved in file saved.txt." << std::endl;
+            saveSudoku(grid, lives, seconds(0));
+            cout << "The current sudoku grid, live count, and time have been saved in file saved.txt." << endl;
             return false;
         }
 
         // Convert the input to integer if it's not 'q' or 'Q'
         row = stoi(input);
-        std::cin >> col >> element;
+        cin >> col >> element;
 
         // for alternative quit option
         if (row == -1 && col == -1 && element == -1)
@@ -1118,7 +1179,7 @@ bool startGame(vector<vector<int>> grid)
 
         if (row > 9 || row < 1 || col > 9 || col < 1)
         {
-            std::cout << "Invalid row or col. Enter again." << std::endl;
+            cout << "Invalid row or col. Enter again." << endl;
             continue;
         }
 
@@ -1128,7 +1189,7 @@ bool startGame(vector<vector<int>> grid)
             printGrid(grid);
             if (isFilled(grid))
             {
-                std::cout << "******* Congratulations! You have WON the game! *******" << std::endl;
+                cout << "******* Congratulations! You have WON the game! *******" << endl;
                 return true;
             }
             continue;
@@ -1136,13 +1197,13 @@ bool startGame(vector<vector<int>> grid)
         else
         {
             lives--;
-            std::cout << "You have entered the wrong element. Lives remaining: " << lives << std::endl;
+            cout << "You have entered the wrong element. Lives remaining: " << lives << endl;
         }
 
         if (lives == 0)
         {
-            std::cout << "   You are out of lives    " << std::endl;
-            std::cout << "******** GAME OVER ********" << std::endl;
+            cout << "   You are out of lives    " << endl;
+            cout << "******** GAME OVER ********" << endl;
             return false;
         }
     }
@@ -1161,13 +1222,6 @@ bool isFilled(vector<vector<int>> grid)
         }
     }
     return true;
-}
-
-bool isCorrect(int row, int col, int element)
-{
-    if (solvedGrid[row - 1][col - 1] == element)
-        return true;
-    return false;
 }
 
 void traditionalSudoku()
@@ -1190,26 +1244,26 @@ void chooseSudokuNumType()
 {
     if (numTypeChoice == 1)
     {
-        std::cout << "\nSudoku elements set to traditional (1 to 9)." << std::endl;
+        cout << "\nSudoku elements set to traditional (1 to 9)." << endl;
         traditionalSudoku();
     }
     else if (numTypeChoice == 2)
     {
-        std::cout << "\nSudoku elements set to odd numbers (1, 3,....., 15, 17)." << std::endl;
+        cout << "\nSudoku elements set to odd numbers (1, 3,....., 15, 17)." << endl;
     }
     else if (numTypeChoice == 3)
     {
-        std::cout << "\nSudoku elements set to even numbers (2, 4,....., 16, 18)." << std::endl;
+        cout << "\nSudoku elements set to even numbers (2, 4,....., 16, 18)." << endl;
         evenSudoku();
     }
     else if (numTypeChoice == 4)
     {
-        std::cout << "\nSudoku elements set to Alphabet (A, B, C,..., H, I)." << std::endl;
+        cout << "\nSudoku elements set to Alphabet (A, B, C,..., H, I)." << endl;
         traditionalSudoku();
     }
     else
     {
-        std::cout << "\nInvalid Choice. Defaulting to odds (1, 3,....., 15, 17)." << std::endl;
+        cout << "\nInvalid Choice. Defaulting to odds (1, 3,....., 15, 17)." << endl;
     }
 }
 
@@ -1274,36 +1328,36 @@ void removeNumbers(vector<vector<int>> &grid, int holes)
 
 void printGridWithAlphabet(const vector<vector<int>> &grid)
 {
-    std::cout << "+---------+---------+---------+" << std::endl;
+    cout << "+---------+---------+---------+" << endl;
 
     for (int row = 0; row < GRID_SIZE; row++)
     {
-        std::cout << "|";
+        cout << "|";
         for (int col = 0; col < GRID_SIZE; col++)
         {
             if (grid[row][col] == 0)
             {
-                std::cout << " . ";
+                cout << " . ";
             }
             else
             {
                 char ch = grid[row][col] + 'A' - 1;
-                std::cout << " " << ch << " ";
+                cout << " " << ch << " ";
             }
 
             if ((col + 1) % 3 == 0)
             {
-                std::cout << "|";
+                cout << "|";
             }
         }
-        std::cout << std::endl;
+        cout << endl;
 
         if ((row + 1) % 3 == 0 && row != GRID_SIZE - 1)
         {
-            std::cout << "+---------+---------+---------+" << std::endl;
+            cout << "+---------+---------+---------+" << endl;
         }
     }
-    std::cout << "+---------+---------+---------+" << std::endl;
+    cout << "+---------+---------+---------+" << endl;
 }
 
 void printGrid(const vector<vector<int>> &grid)
@@ -1315,66 +1369,66 @@ void printGrid(const vector<vector<int>> &grid)
     }
     if (numTypeChoice == 1)
     {
-        std::cout << "+---------+---------+---------+" << std::endl;
+        cout << "+---------+---------+---------+" << endl;
     }
     else
     {
-        std::cout << "+------------+------------+------------+" << std::endl;
+        cout << "+------------+------------+------------+" << endl;
     }
     for (int row = 0; row < GRID_SIZE; row++)
     {
-        std::cout << "|";
+        cout << "|";
         for (int col = 0; col < GRID_SIZE; col++)
         {
             if (grid[row][col] == 0)
             {
                 if (numTypeChoice == 1)
                 {
-                    std::cout << " . ";
+                    cout << " . ";
                 }
                 else
                 {
-                    std::cout << " .. ";
+                    cout << " .. ";
                 }
             }
             else
             {
                 if (numTypeChoice == 1)
                 {
-                    std::cout << " " << grid[row][col] << " ";
+                    cout << " " << grid[row][col] << " ";
                 }
                 else
                 {
-                    std::cout << " " << std::setw(2) << std::setfill('0') << grid[row][col] << " ";
+                    cout << " " << setw(2) << setfill('0') << grid[row][col] << " ";
                 }
             }
 
             if ((col + 1) % 3 == 0)
             {
-                std::cout << "|";
+                cout << "|";
             }
         }
-        std::cout << std::endl;
+        cout << endl;
 
         if ((row + 1) % 3 == 0 && row != GRID_SIZE - 1)
         {
             if (numTypeChoice == 1)
             {
-                std::cout << "+---------+---------+---------+" << std::endl;
+                cout << "+---------+---------+---------+" << endl;
             }
             else
             {
-                std::cout << "+------------+------------+------------+" << std::endl;
+                cout << "+------------+------------+------------+" << endl;
             }
         }
     }
     if (numTypeChoice == 1)
     {
-        std::cout << "+---------+---------+---------+" << std::endl;
+        cout << "+---------+---------+---------+" << endl;
     }
     else
     {
-        std::cout << "+------------+------------+------------+" << std::endl;
+        cout << "+------------+------------+------------+" << endl;
     }
 }
 
@@ -1395,7 +1449,7 @@ vector<vector<int>> generateSudoku()
     }
     else
     {
-        std::cout << "Invalid Choice. Defaulting to general sudoku." << std::endl;
+        cout << "Invalid Choice. Defaulting to general sudoku." << endl;
         fillGrid(grid);
     }
 
@@ -1415,7 +1469,7 @@ vector<vector<int>> generateSudoku()
         holes = 50;
         break;
     default:
-        std::cout << "Invalid choice, defaulting to Medium.\n";
+        cout << "Invalid choice, defaulting to Medium.\n";
         holes = 30;
     }
 
@@ -1424,7 +1478,7 @@ vector<vector<int>> generateSudoku()
     return grid;
 }
 
-int calculateScore(int lives, int hintsUsed, sf::Time totalTime, int difficultyChoice)
+int calculateScore(int lives, int hintsUsed, Time totalTime, int difficultyChoice)
 {
     int baseScore;
     switch (difficultyChoice)
