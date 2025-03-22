@@ -1,12 +1,13 @@
 #include <SFML/Graphics.hpp>
-#include <bits/stdc++.h>
+// #include <bits/stdc++.h>
 #include <random>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cstdlib>
 #include <ctime>
 #include <iomanip>
-#include <algorithm>
+// #include <algorithm>
 
 using namespace std;
 using namespace sf;
@@ -100,7 +101,7 @@ void drawLives(RenderWindow &window, Font &font, int lives)
     wstring livesString = L"Lives: " + wstring(lives, L'\u2764'); // L'\u2764' represents the heart emoji
 
     // Create text using the font and string
-    Text livesText(livesString, font, 50); // Use an appropriate font size
+    Text livesText(livesString, font, 30); // Use an appropriate font size
 
     // Set text color (you can adjust the color as needed)
     livesText.setFillColor(Color::Red);
@@ -519,8 +520,8 @@ void drawMainMenu(RenderWindow &window, Font &font)
     title.setPosition(200, 100);
     window.draw(title);
 
-    drawButton(window, font, "New Game", Vector2f(300, 300), Color::Green);
-    drawButton(window, font, "Load Game", Vector2f(300, 400), Color::Blue);
+    drawButton(window, font, "New Game", Vector2f(300, 300), Color::Cyan);
+    drawButton(window, font, "Load Game", Vector2f(300, 400), Color::Cyan);
 }
 
 void drawSudokuOptions(RenderWindow &window, Font &font)
@@ -1457,7 +1458,7 @@ vector<vector<int>> generateSudoku()
     switch (difficultyChoice)
     {
     case 1:
-        holes = 25;
+        holes = 1;
         break;
     case 2:
         holes = 30;
