@@ -1458,7 +1458,7 @@ vector<vector<int>> generateSudoku()
     switch (difficultyChoice)
     {
     case 1:
-        holes = 1;
+        holes = 20;
         break;
     case 2:
         holes = 30;
