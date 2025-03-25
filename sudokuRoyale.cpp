@@ -10,6 +10,8 @@
 using namespace std;
 using namespace sf;
 
+// TODO:  xwing and swordfish
+
 // Global Variables
 #define LIVES 3
 const int GRID_SIZE = 9;
@@ -216,6 +218,7 @@ int main()
     Time savedTime;
     Time totalTime;
     int score = 0;
+    string inputBuffer = ""; // Buffer to store multi-digit input
 
     while (window.isOpen())
     {
@@ -235,12 +238,12 @@ int main()
                         if (x > 300 && x < 500)
                         {
                             if (y > 300 && y < 350)
-                            {
+                            { // New Game button
                                 inMainMenu = false;
                                 inOptions = true;
                             }
                             else if (y > 400 && y < 450)
-                            {
+                            { // Load Game button
                                 loadSudoku(grid, lives, savedTime);
                                 inMainMenu = false;
                                 inGame = true;
@@ -248,7 +251,7 @@ int main()
                                 savedTime += gameClock.getElapsedTime();
                             }
                             else if (y > 500 && y < 550)
-                            {
+                            { // Exit button
                                 window.close();
                             }
                         }
@@ -258,50 +261,50 @@ int main()
                         if (x > 50 && x < 250)
                         {
                             if (y > 100 && y < 150)
-                            {
+                            { // Traditional button
                                 numTypeChoice = 1;
                             }
                             else if (y > 200 && y < 250)
-                            {
+                            { // Even Num button
                                 numTypeChoice = 3;
                             }
                             else if (y > 350 && y < 400)
-                            {
+                            { // General button
                                 sudokuTypeChoice = 1;
                             }
                             else if (y > 450 && y < 500)
-                            {
+                            { // Windoku button
                                 sudokuTypeChoice = 3;
                             }
                             else if (y > 600 && y < 650)
-                            {
+                            { // Easy button
                                 difficultyChoice = 1;
                             }
                             else if (y > 700 && y < 750)
-                            {
+                            { // Hard button
                                 difficultyChoice = 3;
                             }
                         }
                         else if (x > 300 && x < 500)
                         {
                             if (y > 100 && y < 150)
-                            {
+                            { // Odd Num button
                                 numTypeChoice = 2;
                             }
                             else if (y > 200 && y < 250)
-                            {
+                            { // Alphabet button
                                 numTypeChoice = 4;
                             }
                             else if (y > 350 && y < 400)
-                            {
+                            { // Diagonal button
                                 sudokuTypeChoice = 2;
                             }
                             else if (y > 600 && y < 650)
-                            {
+                            { // Medium button
                                 difficultyChoice = 2;
                             }
                             else if (y > 700 && y < 750)
-                            {
+                            { // Expert button
                                 difficultyChoice = 4;
                             }
                         }
@@ -327,17 +330,17 @@ int main()
                         else if (y > 650 && y < 700)
                         {
                             if (x > 50 && x < 150)
-                            {
+                            { // Save button
                                 saveSudoku(grid, lives, gameClock.getElapsedTime());
                             }
                             else if (x > 200 && x < 300)
-                            {
+                            { // Load button
                                 loadSudoku(grid, lives, savedTime);
                                 gameClock.restart();
                                 savedTime += gameClock.getElapsedTime();
                             }
                             else if (x > 350 && x < 450)
-                            {
+                            { // Hint button
                                 if (selectedRow != -1 && selectedCol != -1)
                                 {
                                     if (hintsUsed < hintLimit)
@@ -364,26 +367,27 @@ int main()
                                 }
                             }
                             else if (x > 500 && x < 600)
-                            {
+                            { // Solve button
                                 grid = solvedGrid;
+                                gameClock.restart();
                             }
                         }
                         else if (y > 750 && y < 800)
                         {
                             if (x > 50 && x < 150)
-                            {
+                            { // Restart button
                                 grid = generateSudoku();
                                 wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0));
                                 gameClock.restart();
                                 lives = LIVES;
                             }
                             else if (x > 200 && x < 300)
-                            {
+                            { // Main Menu button
                                 inGame = false;
                                 inMainMenu = true;
                             }
                             else if (x > 350 && x < 450)
-                            {
+                            { // Exit button
                                 window.close();
                             }
                         }
@@ -393,7 +397,7 @@ int main()
                         if (x > 300 && x < 500)
                         {
                             if (y > 500 && y < 550)
-                            {
+                            { // Restart button
                                 grid = generateSudoku();
                                 wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0));
                                 gameOver = false;
@@ -402,7 +406,7 @@ int main()
                                 lives = LIVES;
                             }
                             else if (y > 600 && y < 650)
-                            {
+                            { // Main Menu button
                                 inMainMenu = true;
                                 gameOver = false;
                             }
@@ -413,7 +417,7 @@ int main()
                         if (x > 300 && x < 500)
                         {
                             if (y > 500 && y < 550)
-                            {
+                            { // Restart button
                                 grid = generateSudoku();
                                 wrongEntries = vector<vector<int>>(GRID_SIZE, vector<int>(GRID_SIZE, 0));
                                 gameWon = false;
@@ -422,14 +426,14 @@ int main()
                                 lives = LIVES;
                             }
                             else if (y > 600 && y < 650)
-                            {
+                            { // Main Menu button
                                 inMainMenu = true;
                                 gameWon = false;
                             }
                         }
                     }
                     if (x > 700 && x < 900 && y > 750 && y < 800)
-                    {
+                    { // Exit button
                         window.close();
                     }
                 }
@@ -438,34 +442,83 @@ int main()
             {
                 if (selectedRow != -1 && selectedCol != -1)
                 {
-                    if (event.key.code >= Keyboard::Num1 && event.key.code <= Keyboard::Num9)
-                    {
-                        int num = event.key.code - Keyboard::Num1 + 1;
-                        if (isCorrect(selectedRow + 1, selectedCol + 1, num))
+                    if (numTypeChoice == 1 || numTypeChoice == 4)
+                    { // Traditional or Alphabet
+                        if (event.key.code >= Keyboard::Num1 && event.key.code <= Keyboard::Num9)
                         {
-                            grid[selectedRow][selectedCol] = num;
-                            wrongEntries[selectedRow][selectedCol] = 0;
-                            if (isFilled(grid))
+                            int num = event.key.code - Keyboard::Num1 + 1;
+                            if (isCorrect(selectedRow + 1, selectedCol + 1, num))
                             {
-                                totalTime = gameClock.getElapsedTime() + savedTime;
-                                score = calculateScore(lives, hintsUsed, totalTime, difficultyChoice);
-                                cout << "******* Congratulations! You have WON the game! *******" << endl;
-                                inGame = false;
-                                gameWon = true;
+                                grid[selectedRow][selectedCol] = num;
+                                wrongEntries[selectedRow][selectedCol] = 0;
+                                if (isFilled(grid))
+                                {
+                                    totalTime = gameClock.getElapsedTime() + savedTime;
+                                    score = calculateScore(lives, hintsUsed, totalTime, difficultyChoice);
+                                    cout << "******* Congratulations! You have WON the game! *******" << endl;
+                                    inGame = false;
+                                    gameWon = true;
+                                }
+                            }
+                            else
+                            {
+                                lives--;
+                                hintMessage = "Wrong number! Lives remaining: " + to_string(lives);
+                                wrongEntries[selectedRow][selectedCol] = num;
+                                if (lives == 0)
+                                {
+                                    cout << "    You are out of lives    " << endl;
+                                    cout << "******** GAME OVER ********" << endl;
+                                    inGame = false;
+                                    gameOver = true;
+                                }
                             }
                         }
-                        else
+                    }
+                    else
+                    { // Even or Odd
+                        // Buffer multi-digit input and handle it on Enter key press
+                        if (event.key.code >= Keyboard::Num0 && event.key.code <= Keyboard::Num9)
                         {
-                            lives--;
-                            hintMessage = "Wrong number! Lives remaining: " + to_string(lives);
-                            wrongEntries[selectedRow][selectedCol] = num;
-                            if (lives == 0)
+                            inputBuffer += static_cast<char>(event.key.code - Keyboard::Num0 + '0');
+                        }
+                        else if (event.key.code == Keyboard::Enter)
+                        {
+                            if (!inputBuffer.empty())
                             {
-                                cout << "    You are out of lives    " << endl;
-                                cout << "******** GAME OVER ********" << endl;
-                                inGame = false;
-                                gameOver = true;
+                                int num = stoi(inputBuffer);
+                                if (isCorrect(selectedRow + 1, selectedCol + 1, num))
+                                {
+                                    grid[selectedRow][selectedCol] = num;
+                                    wrongEntries[selectedRow][selectedCol] = 0;
+                                    if (isFilled(grid))
+                                    {
+                                        totalTime = gameClock.getElapsedTime() + savedTime;
+                                        score = calculateScore(lives, hintsUsed, totalTime, difficultyChoice);
+                                        cout << "******* Congratulations! You have WON the game! *******" << endl;
+                                        inGame = false;
+                                        gameWon = true;
+                                    }
+                                }
+                                else
+                                {
+                                    lives--;
+                                    hintMessage = "Wrong number! Lives remaining: " + to_string(lives);
+                                    wrongEntries[selectedRow][selectedCol] = num;
+                                    if (lives == 0)
+                                    {
+                                        cout << "    You are out of lives    " << endl;
+                                        cout << "******** GAME OVER ********" << endl;
+                                        inGame = false;
+                                        gameOver = true;
+                                    }
+                                }
+                                inputBuffer.clear();
                             }
+                        }
+                        else if (event.key.code == Keyboard::BackSpace && !inputBuffer.empty())
+                        {
+                            inputBuffer.pop_back();
                         }
                     }
                 }
@@ -516,6 +569,8 @@ void drawMainMenu(RenderWindow &window, Font &font)
 
     drawButton(window, font, "New Game", Vector2f(300, 300), Color::Cyan);
     drawButton(window, font, "Load Game", Vector2f(300, 400), Color::Cyan);
+    // Removed the Exit button
+    // drawButton(window, font, "Exit", Vector2f(300, 500), Color::Red);
 }
 
 void drawSudokuOptions(RenderWindow &window, Font &font)
@@ -1222,7 +1277,7 @@ vector<int> getValidNumbers(int row, int col, const vector<vector<int>> &grid)
 void provideHint(const vector<vector<int>> &grid)
 {
     int minChoices = GRID_SIZE + 1;
-    int bestRow = -1, bestCol = -1;
+    int choosedRow = -1, choosedCol = -1;
     vector<int> bestChoices;
 
     for (int row = 0; row < GRID_SIZE; ++row)
@@ -1235,17 +1290,17 @@ void provideHint(const vector<vector<int>> &grid)
                 if (validNumbers.size() < minChoices)
                 {
                     minChoices = validNumbers.size();
-                    bestRow = row;
-                    bestCol = col;
+                    choosedRow = row;
+                    choosedCol = col;
                     bestChoices = validNumbers;
                 }
             }
         }
     }
 
-    if (bestRow != -1 && bestCol != -1)
+    if (choosedRow != -1 && choosedCol != -1)
     {
-        cout << "Greedy Hint: Cell (" << bestRow + 1 << ", " << bestCol + 1 << ") has "
+        cout << "Greedy Hint: Cell (" << choosedRow + 1 << ", " << choosedCol + 1 << ") has "
              << bestChoices.size() << " valid choices left. Suggested number: "
              << bestChoices[0] << endl;
     }
