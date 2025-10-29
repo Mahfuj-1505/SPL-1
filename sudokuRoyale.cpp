@@ -10,7 +10,6 @@
 using namespace std;
 using namespace sf;
 
-// TODO:  xwing and swordfish
 
 // Global Variables
 #define LIVES 3
@@ -1577,3 +1576,4 @@ int calculateScore(int lives, int hintsUsed, Time totalTime, int difficultyChoic
     int livesBonus = lives * 100;
     return baseScore - timePenalty - hintPenalty + livesBonus;
 }
+
